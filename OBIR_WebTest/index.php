@@ -6,7 +6,25 @@
 </head>
 <body>
 	<form action="select.php" method="post">
-		<input type="text" width="100" id="username" name="username" />
+		<!--<input type="text" width="100" id="username" name="username" />-->
+		<select name="username">
+			<?php
+			include_once "include_files.php";
+			$dbConn = DBHelpers::connect();
+			$st = $dbConn->prepare("SELECT (`username`) FROM `obir`.`users`");
+
+			if ($st->execute()) {
+				$users = $st->fetchAll(PDO::FETCH_COLUMN);
+				if ($users) {
+				
+					foreach ($users as $id => $user) {
+						echo "<option value=\"$user\">$user</option>";
+					}
+				}
+			}
+			?>
+			
+		</select>
 		<input type="submit" value="Login" id="login" />
 	</form>
 </body>

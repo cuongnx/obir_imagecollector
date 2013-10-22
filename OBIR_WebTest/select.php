@@ -1,5 +1,8 @@
 <?php
 include_once "include_files.php";
+$ncol = 3;
+$nrow = 4;
+
 session_start();
 if (isset($_GET['selected'])) {
 	$selected = $_GET['selected'];
@@ -37,11 +40,11 @@ if (isset($_POST['username'])) {
 $is = new ImageScore($username, $_SESSION['turn']);
 
 $keyimg = $is->getKeyImages();
-$dummy = $is->getDummyImages();
+$dummy = $is->getDummyImages($ncol * $nrow);
 //error_log(var_export($keyimg, true)."\n", 3, "logs/debug.txt");
 //error_log(var_export($dummy, true), 3, "logs/debug.txt");
 
-$correct_cell = mt_rand(1, 9);
+$correct_cell = mt_rand(0, 8);
 $_SESSION['pivot'] = $correct_cell;
 
 error_log("Correct cell: ".var_export($correct_cell, true)."  ".$keyimg."\n", 3, "logs/debug.txt");
@@ -65,21 +68,17 @@ img.img_cell {
 		<h2>Username not exists</h2>
 	<?php } else { ?>
 	<table>
-	<tr>
-	<td><a href="select.php?selected=1" onClick="select(1)"><img class="img_cell" src="<?php echo ($correct_cell==1)?$keyimg:$dummy[0]; ?>" /></a></td>
-	<td><a href="select.php?selected=2" onClick="select(2)"><img class="img_cell" src="<?php echo ($correct_cell==2)?$keyimg:$dummy[1]; ?>" /></a></td>
-	<td><a href="select.php?selected=3" onClick="select(3)"><img class="img_cell" src="<?php echo ($correct_cell==3)?$keyimg:$dummy[2]; ?>" /></a></td>
-	</tr>
-	<tr>
-	<td><a href="?selected=4" onClick="select(4)"><img class="img_cell" src="<?php echo ($correct_cell==4)?$keyimg:$dummy[3]; ?>" /></a></td>
-	<td><a href="?selected=5" onClick="select(5)"><img class="img_cell" src="<?php echo ($correct_cell==5)?$keyimg:$dummy[4]; ?>" /></a></td>
-	<td><a href="?selected=6" onClick="select(6)"><img class="img_cell" src="<?php echo ($correct_cell==6)?$keyimg:$dummy[5]; ?>" /></a></td>
-	</tr>
-	<tr>
-	<td><a href="?selected=7" onClick="select(7)"><img class="img_cell" src="<?php echo ($correct_cell==7)?$keyimg:$dummy[6]; ?>" /></a></td>
-	<td><a href="?selected=8" onClick="select(8)"><img class="img_cell" src="<?php echo ($correct_cell==8)?$keyimg:$dummy[7]; ?>" /></a></td>
-	<td><a href="?selected=9" onClick="select(9)"><img class="img_cell" src="<?php echo ($correct_cell==9)?$keyimg:$dummy[8]; ?>" /></a></td>
-	</tr>
+	<?php
+	for ($i = 0; $i < $nrow; ++$i) {
+		echo "<tr>";
+		for ($j = 0; $j < $ncol; ++$j) {
+			$cellnum = $i * $ncol + $j;
+			$imgsrc = ($correct_cell == $cellnum) ? $keyimg : $dummy[$cellnum];
+			echo "<td><a href=\"?selected=$cellnum\" onClick=\"select($cellnum)\"><img class=\"img_cell\" src=\"$imgsrc\" /></a></td>";
+		}
+		echo "</tr>";
+	}
+	?>
 	</table>
 	<?php } ?>
 </body>

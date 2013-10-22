@@ -222,12 +222,12 @@ class ImageScore {
 		}
 		return ($this->keyImages) ? key($this->keyImages) : null;
 	}
-	public function getDummyImages() {
+	public function getDummyImages($num = 9) {
 		if (!$this->dummyImages) {
 			return null;
 		}
 
-		$keys = array_rand($this->dummyImages, 9);
+		$keys = array_rand($this->dummyImages, $num);
 		$dummy = array();
 		foreach ($keys as $v) {
 			array_push($dummy, $this->dummyImages[$v]);
