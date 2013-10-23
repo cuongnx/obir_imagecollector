@@ -81,12 +81,12 @@ class ImageScore {
 
 		try {
 
-			$st = $this->dbConn->prepare("SELECT * FROM `obir`.`images`");
+			$st = $this->dbConn->prepare("SELECT * FROM `obir`.`images` limit :limit offset :offset");
 
-			//$start = 0;
-			//$limit = 10000;
-			//$st->bindParam(':start', $start, PDO::PARAM_INT);
-			//$st->bindParam(':limit', $limit, PDO::PARAM_INT);
+			$st->bindParam(':offset', $offset, PDO::PARAM_INT);
+			$st->bindParam(':limit', $limit, PDO::PARAM_INT);
+			$offset = mt_rand(1, 10000);
+			$limit = 5000;
 
 			if ($st->execute()) {
 
@@ -132,14 +132,11 @@ class ImageScore {
 
 				}
 
-				//change start
+				$offset += $st->rowCount();
+				$limit = 1000;
+
 				error_log("Done with ".$st->rowCount()." images\n ", 3, "logs/debug.txt");
 				error_log(var_export($this->keyImages, true)."\n", 3, "logs/debug.txt");
-				//error_log(var_export($this->dummyImages, true)."\n" 3, "logs/debug.txt");
-
-				//foreach ($this->dummyImages as $k => $val) {
-				//	copy($val, $k.".jpg");
-				//}
 
 			}
 
