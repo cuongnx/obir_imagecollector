@@ -9,5 +9,7 @@
 $result = $_GET["success"];
 ?>
 <h2><?php echo($result) ? "Authenticated!" : "Authentication failed!" ?></h2>
+</br>
+<input type="button" onClick="window.location='/index.php'" value="Retry" />
 </body>
 </html>

@@ -101,14 +101,15 @@ class ImageScore {
 					if ($R <= 0) {
 						// if R=0 then make it dummy image
 						if (self::dist($fullpass, $fv) <= 0) {
-							if (count($this->dummyImages) < self::$dummy_size) {
-								array_push($this->dummyImages, $row['location']);
-							} else {
-								$idx = mt_rand(0, self::$dummy_size + 30);
-								if ($idx < self::$dummy_size) {
-									$this->dummyImages = array_replace($this->dummyImages, array($idx => $row['location']));
+							if ($this->countObj($fv) > 2)
+								if (count($this->dummyImages) < self::$dummy_size) {
+									array_push($this->dummyImages, $row['location']);
+								} else {
+									$idx = mt_rand(0, self::$dummy_size + 30);
+									if ($idx < self::$dummy_size) {
+										$this->dummyImages = array_replace($this->dummyImages, array($idx => $row['location']));
+									}
 								}
-							}
 						}
 
 					} else {
@@ -169,8 +170,9 @@ class ImageScore {
 			return 0;
 		}
 
-		$d = pow($d, 1 / 2);
-		return (-M_E * $d * log($d));
+		//$d = pow($d, 1 / 2);
+		//return (-M_E * $d * log($d));
+		return $d;
 	}
 
 	//noise calculation
@@ -187,8 +189,8 @@ class ImageScore {
 				$ki[$i] = self::$maxima;
 
 				// calculate N
-				$delta = self::dist($fv, $ki) - $d;
-				//$delta = $R - $this->relevance($ki, $fv);
+				//$delta = self::dist($fv, $ki) - $d;
+				$delta = ($this->relevance($ki, $fv) - $R);
 
 				$N += $delta;
 				++$count;
@@ -203,6 +205,17 @@ class ImageScore {
 		}
 
 		return $N;
+	}
+
+	//count number of objects in image
+	private function countObj($fv) {
+		$c = 0;
+		foreach ($fv as $idx => $v) {
+			if ($v != 0) {
+				++$c;
+			}
+		}
+		return $c;
 	}
 
 	//rearrange sorted array

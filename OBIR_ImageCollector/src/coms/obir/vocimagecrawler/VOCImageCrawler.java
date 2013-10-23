@@ -216,7 +216,7 @@ public class VOCImageCrawler {
 			ol.add(new ObjectDescriptor(filename, name, pose, truncated,
 					bndbox, point, difficult));
 
-			//classify(fname, name);
+			// classify(fname, name);
 
 		}
 
@@ -326,9 +326,9 @@ public class VOCImageCrawler {
 				ratio = obArea[idx] / imgArea;
 			}
 			ob.setRatio(ratio);
-			// ratio = Math.pow(ratio, 2.0 / 3.0);
-			// v[idx] = (-Math.E * ratio * Math.log(ratio));
-			v[idx] = ratio;
+			ratio = Math.pow(ratio, 0.7);
+			v[idx] = (-Math.E * ratio * Math.log(ratio));
+			// v[idx] = ratio;
 			ob.setWeight(v[idx]);
 		}
 

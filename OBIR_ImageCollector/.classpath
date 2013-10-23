@@ -9,5 +9,6 @@
 	<classpathentry kind="lib" path="lib/google-gson-2.2.4/gson-2.2.4.jar"/>
 	<classpathentry kind="lib" path="lib/jaxen-1.1.6.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang3-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.20-bin.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
