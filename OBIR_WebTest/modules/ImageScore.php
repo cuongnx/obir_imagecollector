@@ -85,8 +85,9 @@ class ImageScore {
 
 			$st->bindParam(':offset', $offset, PDO::PARAM_INT);
 			$st->bindParam(':limit', $limit, PDO::PARAM_INT);
-			$offset = mt_rand(1, 10000);
-			$limit = 5000;
+			$offset = mt_rand(1, 8000);
+			$limit = 9000;
+			error_log("offset ".$offset."\n ", 3, "logs/debug.txt");
 
 			if ($st->execute()) {
 
@@ -125,7 +126,7 @@ class ImageScore {
 							} else {
 								$this->keyImages = self::rearrange($this->keyImages, array($row['location'] => $S));
 							}
-							//error_log($row['filename']." ".$R."*".$N."=".$S."\n", 3, "logs/debug.txt");
+							error_log($row['filename']." ".$R."*".$N."=".$S."\n", 3, "logs/debug.txt");
 						}
 
 					}
@@ -135,7 +136,6 @@ class ImageScore {
 				$offset += $st->rowCount();
 				$limit = 1000;
 
-				error_log("Done with ".$st->rowCount()." images\n ", 3, "logs/debug.txt");
 				error_log(var_export($this->keyImages, true)."\n", 3, "logs/debug.txt");
 
 			}
@@ -187,7 +187,7 @@ class ImageScore {
 
 				// calculate N
 				//$delta = self::dist($fv, $ki) - $d;
-				$delta = ($this->relevance($ki, $fv) - $R);
+				$delta = abs($this->relevance($ki, $fv) - $R);
 
 				$N += $delta;
 				++$count;
@@ -195,8 +195,8 @@ class ImageScore {
 		}
 
 		if (($N > 0) && ($count > 1)) {
-			$N = (1 - $N / $count) * ($count - 1) / $count;
-			//$N=$N*($count-1)/$count;
+			//$N = (1 - $N / $count) * ($count - 1) / $count;
+			$N = 1 - $N / $count;
 		} else {
 			$N = 0;
 		}

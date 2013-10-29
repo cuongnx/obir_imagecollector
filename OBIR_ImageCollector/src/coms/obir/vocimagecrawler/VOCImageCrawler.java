@@ -326,7 +326,7 @@ public class VOCImageCrawler {
 				ratio = obArea[idx] / imgArea;
 			}
 			ob.setRatio(ratio);
-			ratio = Math.pow(ratio, 0.7);
+			ratio = Math.pow(ratio, 0.4);
 			v[idx] = (-Math.E * ratio * Math.log(ratio));
 			// v[idx] = ratio;
 			ob.setWeight(v[idx]);
