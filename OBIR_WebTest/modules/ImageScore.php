@@ -85,8 +85,8 @@ class ImageScore {
 
 			$st->bindParam(':offset', $offset, PDO::PARAM_INT);
 			$st->bindParam(':limit', $limit, PDO::PARAM_INT);
-			$offset = mt_rand(1, 8000);
-			$limit = 9000;
+			$offset = mt_rand(1, 2000);
+			$limit = 15000;
 			error_log("offset ".$offset."\n ", 3, "logs/debug.txt");
 
 			if ($st->execute()) {
@@ -167,8 +167,8 @@ class ImageScore {
 			return 0;
 		}
 
-		//$d = pow($d, 1 / 2);
-		//return (-M_E * $d * log($d));
+		$d = pow($d, 0.5);
+		$d = (-M_E * $d * log($d));
 		return $d;
 	}
 
@@ -186,8 +186,8 @@ class ImageScore {
 				$ki[$i] = self::$maxima;
 
 				// calculate N
-				//$delta = self::dist($fv, $ki) - $d;
-				$delta = abs($this->relevance($ki, $fv) - $R);
+				$delta = abs(self::dist($fv, $ki) - $d);
+				//$delta = abs($this->relevance($ki, $fv) - $R);
 
 				$N += $delta;
 				++$count;
@@ -195,8 +195,8 @@ class ImageScore {
 		}
 
 		if (($N > 0) && ($count > 1)) {
-			//$N = (1 - $N / $count) * ($count - 1) / $count;
-			$N = 1 - $N / $count;
+			$N = (1 - $N / $count) * ($count - 1) / $count;
+			//$N = 1 - $N / $count;
 		} else {
 			$N = 0;
 		}
