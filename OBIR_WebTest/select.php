@@ -20,6 +20,8 @@ if (isset($_GET['selected'])) {
 		} else {
 			header("Location: /result.php?success=0");
 		}
+
+		session_destroy();
 		exit;
 	}
 
@@ -33,6 +35,7 @@ if (isset($_POST['username'])) {
 	$_SESSION['username'] = $_POST['username'];
 	$_SESSION['turn'] = 0;
 	$_SESSION['corrected'] = 0;
+	$_SESSION['displayed'] = [];
 } else {
 	$username = $_SESSION['username'];
 }
@@ -40,13 +43,18 @@ if (isset($_POST['username'])) {
 $is = new ImageScore($username, $_SESSION['turn']);
 
 $keyimg = $is->getKeyImages();
+if (!$keyimg) {
+	session_destroy();
+	header("Location: /result.php?success=0");
+}
 $dummy = $is->getDummyImages($ncol * $nrow);
-//error_log(var_export($keyimg, true)."\n", 3, "logs/debug.txt");
-//error_log(var_export($dummy, true), 3, "logs/debug.txt");
+
+array_push($_SESSION['displayed'], $keyimg);
 
 $correct_cell = mt_rand(0, 8);
 $_SESSION['pivot'] = $correct_cell;
 
+error_log("Displayed: ".var_export($_SESSION['displayed'], true)."\n", 3, "logs/debug.txt");
 error_log("Correct cell: ".var_export($correct_cell, true)."  ".$keyimg."\n", 3, "logs/debug.txt");
 ?>
 
@@ -78,8 +86,9 @@ img.img_cell {
 		}
 		echo "</tr>";
 	}
-	?>
+?>
 	</table>
 	<?php } ?>
+	<input type="button" name="reload" value="Reload" onClick="window.location='/select.php'" />
 </body>
 </html>

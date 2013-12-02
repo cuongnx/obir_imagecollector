@@ -6,14 +6,13 @@ class ImageScore {
 	private $keyImages = array();
 	private $dummyImages = array();
 
-	private static $key_size = 5;
+	private static $key_size = 10;
 	private static $dummy_size = 50;
-
+	private static $max_turn = 3;
 	private static $maxima = 1;
 
 	private $password = null;
 	private $success = false;
-	private $turn = null;
 
 	private $password_tmp = array();
 
@@ -24,15 +23,24 @@ class ImageScore {
 			$this->success = false;
 			return;
 		} else {
-			error_log(var_export($this->password, true)."\n", 3, "logs/debug.txt");
 			$this->success = true;
+			$password = $this->password;
 
-			$len = count($this->password);
-			$pass = array($this->password[$turn % $len]);
-			$this->turn = $turn;
+			$len = count($password);
 
-			$this->get_and_score($pass);
+			if ($turn == 0) {
+				shuffle($password);
+				while (count($password) < self::$max_turn) {
+					$password[] = $password[array_rand($password)];
+				}
+				$_SESSION['dump'] = $password;
+			}
+
+			error_log(var_export($this->password, true)."\n", 3, "logs/debug.txt");
+			error_log(var_export($_SESSION['dump'], true)."\n", 3, "logs/debug.txt");
 		}
+
+		$this->get_and_score(array($_SESSION['dump'][$turn]));
 	}
 
 	private function get_and_score($password) {
@@ -96,6 +104,7 @@ class ImageScore {
 					//get image feature vector and calculate score
 
 					$fv = json_decode($row['vector']);
+					$avg_dist = $row['avg_distance'];
 
 					$R = $this->relevance($q, $fv);
 
@@ -115,7 +124,7 @@ class ImageScore {
 
 					} else {
 						//else calculate score
-						$N = $this->noise($R, $q, $fv);
+						$N = $this->noise($R, $q, $fv, $avg_dist);
 						$S = $R * $N;
 
 						//if S!=0 then determine if it should be put into correct image array
@@ -126,7 +135,7 @@ class ImageScore {
 							} else {
 								$this->keyImages = self::rearrange($this->keyImages, array($row['location'] => $S));
 							}
-							error_log($row['filename']." ".$R."*".$N."=".$S."\n", 3, "logs/debug.txt");
+							//error_log($row['filename']." ".$R."*".$N."=".$S."\n", 3, "logs/debug.txt");
 						}
 
 					}
@@ -173,9 +182,9 @@ class ImageScore {
 	}
 
 	//noise calculation
-	private function noise($R, $q, $fv) {
+	private function noise($R, $q, $fv, $avg_dist) {
 		$count = 0;
-		$N = 0;
+		$N = 0.0;
 		$d = self::dist($q, $fv);
 
 		foreach ($fv as $i => $val) {
@@ -186,7 +195,7 @@ class ImageScore {
 				$ki[$i] = self::$maxima;
 
 				// calculate N
-				$delta = abs(self::dist($fv, $ki) - $d);
+				$delta = pow(self::dist($fv, $ki) - $d, 2);
 				//$delta = abs($this->relevance($ki, $fv) - $R);
 
 				$N += $delta;
@@ -195,7 +204,7 @@ class ImageScore {
 		}
 
 		if (($N > 0) && ($count > 1)) {
-			$N = (1 - $N / $count) * ($count - 1) / $count;
+			$N = (1 - sqrt($N / $count) * $avg_dist) * ($count - 1) / $count;
 			//$N = 1 - $N / $count;
 		} else {
 			$N = 0;
@@ -223,14 +232,10 @@ class ImageScore {
 	}
 
 	public function getKeyImages() {
-		if ($this->turn === null) {
-			return null;
+		foreach ($_SESSION['displayed'] as $k => $v) {
+			unset($this->keyImages[$v]);
 		}
-		$start = floor($this->turn / count($this->password));
-		if ($start >= 1) {
-			$this->keyImages = array_slice($this->keyImages, $start, count($this->keyImages));
-		}
-		return ($this->keyImages) ? key($this->keyImages) : null;
+		return ($this->keyImages) ? array_rand($this->keyImages, 1) : null;
 	}
 	public function getDummyImages($num = 9) {
 		if (!$this->dummyImages) {

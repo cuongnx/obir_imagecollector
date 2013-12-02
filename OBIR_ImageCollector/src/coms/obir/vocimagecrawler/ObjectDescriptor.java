@@ -10,13 +10,15 @@ public class ObjectDescriptor {
 	private Point[] bndbox;
 	private Point point;
 	private int difficult;
+	private Point center;
 
 	private double area;
 	private double ratio;
 	private double weight;
 
 	public ObjectDescriptor(String owner, String name, String pose,
-			int truncated, Point[] bndbox, Point point, int difficult) {
+			int truncated, Point[] bndbox, Point point, int difficult,
+			Point center) {
 		super();
 		this.owner = owner;
 		this.name = name;
@@ -25,10 +27,19 @@ public class ObjectDescriptor {
 		this.bndbox = bndbox;
 		this.point = point;
 		this.difficult = difficult;
+		this.center = center;
 
 		area = 0.0;
 		ratio = 0.0;
 		weight = 0.0;
+	}
+
+	public Point getCenter() {
+		return center;
+	}
+
+	public void setCenter(Point center) {
+		this.center = center;
 	}
 
 	public String getOwner() {

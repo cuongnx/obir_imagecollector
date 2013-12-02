@@ -59,59 +59,50 @@ public class VOCImageCrawler {
 		// open database
 		try {
 			dbConn = Helpers.openDbConnection();
+
+			// if database is opened
+			if (dbConn != null) {
+
+				initKeywords();
+				initImages();
+
+				// update to database if parameter is true
+				calculateFeatureSpace(true);
+
+				// close database
+				try {
+					Helpers.closeDbConnection(dbConn);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 
-		// if database is opened
-		if (dbConn != null) {
-
-			initKeywords();
-			initImages();
-
-			// update to database if parameter is true
-			calculateFeatureSpace(true);
-
-			// close database
-			try {
-				Helpers.closeDbConnection(dbConn);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
-
 	}
 
-	private void initKeywords() {
+	private void initKeywords() throws SQLException {
 		List<String> k = new ArrayList<String>();
 
 		// insert keywords to database
 		Statement st = null;
 		String q = "SELECT `word` FROM `obir`.`keywords` ORDER BY `word` ASC";
-		try {
-			// get keywords from db
-			st = dbConn.createStatement();
-			ResultSet rs = st.executeQuery(q);
+		// get keywords from db
+		st = dbConn.createStatement();
+		ResultSet rs = st.executeQuery(q);
 
-			while (rs.next()) {
-				k.add(rs.getString(1));
-			}
-
-			// then store in array keywords
-			keywords = k.toArray(new String[k.size()]);
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			if (st != null) {
-				try {
-					st.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			}
+		while (rs.next()) {
+			k.add(rs.getString(1));
 		}
 
+		// then store in array keywords
+		keywords = k.toArray(new String[k.size()]);
+
+		if (st != null) {
+			st.close();
+		}
 	}
 
 	private void initImages() {
@@ -212,9 +203,10 @@ public class VOCImageCrawler {
 			int xmin = Helpers.parseInt(getNodeText(n, "bndbox/xmin"));
 			int ymin = Helpers.parseInt(getNodeText(n, "bndbox/ymin"));
 			Point[] bndbox = { new Point(xmin, ymin), new Point(xmax, ymax) };
+			Point center = new Point((xmin + xmax) / 2, (ymin + ymax) / 2);
 
 			ol.add(new ObjectDescriptor(filename, name, pose, truncated,
-					bndbox, point, difficult));
+					bndbox, point, difficult, center));
 
 			// classify(fname, name);
 
@@ -235,87 +227,104 @@ public class VOCImageCrawler {
 	}
 
 	// calculate feature space
-	private void calculateFeatureSpace(boolean update) {
+	private void calculateFeatureSpace(boolean update) throws SQLException {
 		// create feature space
 		featureSpace = new HashMap<String, double[]>();
 
 		// prepare statement to interact with database
 		PreparedStatement st = null;
-		String base_query = "UPDATE `obir`.`images` SET `vector`=? WHERE `filename`=?;";
-		try {
+		String base_query = "UPDATE `obir`.`images` SET `vector`=?, `avg_distance`=? WHERE `filename`=?;";
 
-			st = dbConn.prepareStatement(base_query);
-			int count = 0;
-			for (Map.Entry<String, ImageAnnotation> entry : imageDescription
-					.entrySet()) {
-				System.out.println("Calculating for " + entry.getKey()
-						+ ": (has " + entry.getValue().getObjects().size()
-						+ " objects)");
+		dbConn.setAutoCommit(false);
 
-				// calculate feature vector of image based on its contained
-				// objects
-				double[] v = calcFeatureVector(entry.getValue(), keywords);
+		st = dbConn.prepareStatement(base_query);
+		for (Map.Entry<String, ImageAnnotation> entry : imageDescription
+				.entrySet()) {
+			System.out.println("Calculating for " + entry.getKey() + ": (has "
+					+ entry.getValue().getObjects().size() + " objects)");
 
-				featureSpace.put(entry.getKey(), v);
+			// calculate feature vector of image based on its contained
+			// objects
+			double[] v = calcFeatureVector(entry.getValue(), keywords);
+			double avg_dist = v[v.length - 1];
+			v = Arrays.copyOf(v, v.length - 1);
 
-				System.out.println("\t" + Helpers.array2string(v));
+			featureSpace.put(entry.getKey(), v);
 
-				Gson gs = new Gson();
-				String js_v = gs.toJson(v);
+			Gson gs = new Gson();
+			String js_v = gs.toJson(v);
 
-				if (update) {
-					st.setString(1, js_v);
-					st.setString(2, entry.getKey());
-					st.executeUpdate();
-				}
+			if (update) {
+				st.setString(1, js_v);
+				st.setDouble(2, avg_dist);
+				st.setString(3, entry.getKey());
+				st.executeUpdate();
 			}
+		}
 
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			if (st != null) {
-				try {
-					st.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			}
+		dbConn.commit();
+		dbConn.setAutoCommit(true);
+
+		if (st != null) {
+			st.close();
 		}
 	}
 
 	private double[] calcFeatureVector(ImageAnnotation ann, String[] keywords) {
 
 		// feature vector initialized with 0
-		double[] v = new double[keywords.length];
+		double[] v = new double[keywords.length + 1];
 
 		List<String> k = Arrays.asList(keywords);
 
-		// image area
-		double imgArea = (double) ann.getHeight() * (double) ann.getWidth();
 		// object area
 		double[] obArea = new double[keywords.length];
 
-		// initiate feature vector and objects' area
+		// initialize feature vector and objects' area
 		for (int i = 0; i < keywords.length; ++i) {
 			v[i] = 0;
 			obArea[i] = 0;
 		}
 
-		for (ObjectDescriptor ob : ann.getObjects()) {
+		// image area
+		double imgArea = (double) ann.getHeight() * (double) ann.getWidth();
+
+		// images' objects
+		ObjectDescriptor[] objects = ann.getObjects().toArray(
+				new ObjectDescriptor[0]);
+
+		// average object distance
+		double avg_dist = 0;
+		double max_dist = 0;
+		double obj_num = (double) objects.length;
+
+		for (int i = 0; i < obj_num; ++i) {
 			// object area
-			// long oa = Math.abs((ob.getBndbox()[0].x - ob.getBndbox()[1].x)
-			// * (ob.getBndbox()[0].y - ob.getBndbox()[1].y));
-			// double ratio = (double) oa / (double) imgArea;
+			ObjectDescriptor ob = objects[i];
+			double oa = (double) Math
+					.abs((ob.getBndbox()[0].x - ob.getBndbox()[1].x)
+							* (ob.getBndbox()[0].y - ob.getBndbox()[1].y));
 
-			// v[i] = -e*rat*log(rat)
-			// v[k.indexOf(ob.getName())] += (-Math.E * ratio *
-			// Math.log(ratio));
-			// v[k.indexOf(ob.getName())] =1;
-
-			obArea[k.indexOf(ob.getName())] += (double) Math.abs((ob
-					.getBndbox()[0].x - ob.getBndbox()[1].x)
-					* (ob.getBndbox()[0].y - ob.getBndbox()[1].y));
+			obArea[k.indexOf(ob.getName())] += oa;
 			ob.setArea(obArea[k.indexOf(ob.getName())]);
+
+			for (int j = i + 1; j < obj_num; ++j) {
+				Point icenter = ob.getCenter();
+				Point jcenter = objects[j].getCenter();
+
+				double dist = Math.hypot((double) (jcenter.x - icenter.x),
+						(double) (jcenter.y - icenter.y));
+				avg_dist += dist;
+				if (dist > max_dist) {
+					max_dist = dist;
+				}
+			}
+		}
+
+		if ((obj_num > 1) && (max_dist != 0)) {
+			avg_dist = avg_dist / (obj_num * (obj_num - 1) / 2) / max_dist;
+		} else {
+			avg_dist = 1;
 		}
 
 		// calculate vector's elements
@@ -332,6 +341,11 @@ public class VOCImageCrawler {
 			ob.setWeight(v[idx]);
 		}
 
+		System.out.println("\t" + Helpers.array2string(v));
+		System.out.print("\t max distance " + max_dist);
+		System.out.println("\t average distance " + avg_dist);
+
+		v[v.length - 1] = avg_dist;
 		return v;
 	}
 
