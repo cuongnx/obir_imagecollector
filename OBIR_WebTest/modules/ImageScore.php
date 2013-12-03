@@ -7,7 +7,7 @@ class ImageScore {
 	private $dummyImages = array();
 
 	private static $key_size = 10;
-	private static $dummy_size = 50;
+	private static $dummy_size = 150;
 	private static $max_turn = 3;
 	private static $maxima = 1;
 
@@ -28,23 +28,25 @@ class ImageScore {
 
 			$len = count($password);
 
-			if ($turn == 0) {
+			if ($turn == - 1) {
 				shuffle($password);
 				while (count($password) < self::$max_turn) {
 					$password[] = $password[array_rand($password)];
 				}
 				$_SESSION['dump'] = $password;
+				$turn = 0;
 			}
 
-			error_log(var_export($this->password, true)."\n", 3, "logs/debug.txt");
-			error_log(var_export($_SESSION['dump'], true)."\n", 3, "logs/debug.txt");
+			//error_log(var_export($this->password, true)."\n", 3, "logs/debug.txt");
+			//error_log(var_export($_SESSION['dump'], true)."\n", 3, "logs/debug.txt");
+
+			$this->get_and_score(array($_SESSION['dump'][$turn]));
 		}
 
-		$this->get_and_score(array($_SESSION['dump'][$turn]));
 	}
 
 	private function get_and_score($password) {
-		error_log("getting keywords...\n ", 3, "logs/debug.txt");
+		error_log("getting keywords...\n ", 3, "../logs/debug.txt");
 		try {
 
 			$keywords = null;
@@ -64,7 +66,7 @@ class ImageScore {
 					foreach ($password as $p) {
 						$pvector[$p - 1] = self::$maxima;
 						array_push($this->password_tmp, $keywords[$p - 1]);
-						error_log($keywords[$p - 1]." ", 3, "logs/debug.txt");
+						error_log($keywords[$p - 1]." ", 3, "../logs/debug.txt");
 					}
 
 					//get images and ranking based on password vector
@@ -75,13 +77,13 @@ class ImageScore {
 			$st = null;
 
 		} catch (PDOException $e) {
-			error_log(var_export($e->getMessage(), true), 3, "logs/debug.txt");
+			error_log(var_export($e->getMessage(), true), 3, "../logs/debug.txt");
 		}
 
 	}
 
 	private function ranking($q) {
-		error_log("begin scoring...\n ", 3, "logs/debug.txt");
+		error_log("begin scoring...\n ", 3, "../logs/debug.txt");
 		$fullpass = array_fill(0, count($q), 0);
 		foreach ($this->password as $p) {
 			$fullpass[$p - 1] = self::$maxima;
@@ -95,7 +97,7 @@ class ImageScore {
 			$st->bindParam(':limit', $limit, PDO::PARAM_INT);
 			$offset = mt_rand(1, 2000);
 			$limit = 15000;
-			error_log("offset ".$offset."\n ", 3, "logs/debug.txt");
+			error_log("offset ".$offset."\n ", 3, "../logs/debug.txt");
 
 			if ($st->execute()) {
 
@@ -110,16 +112,15 @@ class ImageScore {
 
 					if ($R <= 0) {
 						// if R=0 then make it dummy image
-						if (self::dist($fullpass, $fv) <= 0) {
-							if ($this->countObj($fv) > 2)
-								if (count($this->dummyImages) < self::$dummy_size) {
-									array_push($this->dummyImages, $row['location']);
-								} else {
-									$idx = mt_rand(0, self::$dummy_size + 30);
-									if ($idx < self::$dummy_size) {
-										$this->dummyImages = array_replace($this->dummyImages, array($idx => $row['location']));
-									}
+						if ((self::dist($fullpass, $fv) <= 0) && ($this->countObj($fv) > 2)) {
+							if (count($this->dummyImages) < self::$dummy_size) {
+								array_push($this->dummyImages, $row['location']);
+							} else {
+								$idx = mt_rand(0, self::$dummy_size + 30);
+								if ($idx < self::$dummy_size) {
+									$this->dummyImages = array_replace($this->dummyImages, array($idx => $row['location']));
 								}
+							}
 						}
 
 					} else {
@@ -137,7 +138,6 @@ class ImageScore {
 							}
 							//error_log($row['filename']." ".$R."*".$N."=".$S."\n", 3, "logs/debug.txt");
 						}
-
 					}
 
 				}
@@ -145,20 +145,18 @@ class ImageScore {
 				$offset += $st->rowCount();
 				$limit = 1000;
 
-				error_log(var_export($this->keyImages, true)."\n", 3, "logs/debug.txt");
+				error_log(var_export($this->keyImages, true)."\n", 3, "../logs/debug.txt");
 
 			}
 
-			error_log("Done scoring!\n ", 3, "logs/debug.txt");
+			error_log("Done scoring!\n ", 3, "../logs/debug.txt");
 		} catch (PDOException $e) {
-			error_log(var_export($e->getMessage(), true), 3, "logs/debug.txt");
+			error_log(var_export($e->getMessage(), true), 3, "../logs/debug.txt");
 		}
 
 		$st = null;
 		$this->dbConn = null;
-	}
-
-	// distance between 2 vectors
+	} // distance between 2 vectors
 	private static function dist($u, $v) {
 		$d = 0;
 
@@ -235,12 +233,16 @@ class ImageScore {
 		foreach ($_SESSION['displayed'] as $k => $v) {
 			unset($this->keyImages[$v]);
 		}
+
 		return ($this->keyImages) ? array_rand($this->keyImages, 1) : null;
 	}
+
 	public function getDummyImages($num = 9) {
 		if (!$this->dummyImages) {
 			return null;
 		}
+
+		$this->dummyImages = array_diff($this->dummyImages, array_values($_SESSION['displayed']));
 
 		$keys = array_rand($this->dummyImages, $num);
 		$dummy = array();

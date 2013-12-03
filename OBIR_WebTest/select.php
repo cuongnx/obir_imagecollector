@@ -1,63 +1,3 @@
-<?php
-include_once "include_files.php";
-$ncol = 3;
-$nrow = 4;
-
-session_start();
-if (isset($_GET['selected'])) {
-	$selected = $_GET['selected'];
-	$turn = $_SESSION['turn'];
-
-	if ($selected == $_SESSION['pivot']) {
-		$_SESSION['corrected'] += 1;
-	}
-
-	$corrected = $_SESSION['corrected'];
-
-	if ($turn >= 2) {
-		if ($corrected >= 3) {
-			header("Location: /result.php?success=1");
-		} else {
-			header("Location: /result.php?success=0");
-		}
-
-		session_destroy();
-		exit;
-	}
-
-	$_SESSION['turn'] += 1;
-
-}
-
-$username = null;
-if (isset($_POST['username'])) {
-	$username = $_POST['username'];
-	$_SESSION['username'] = $_POST['username'];
-	$_SESSION['turn'] = 0;
-	$_SESSION['corrected'] = 0;
-	$_SESSION['displayed'] = [];
-} else {
-	$username = $_SESSION['username'];
-}
-
-$is = new ImageScore($username, $_SESSION['turn']);
-
-$keyimg = $is->getKeyImages();
-if (!$keyimg) {
-	session_destroy();
-	header("Location: /result.php?success=0");
-}
-$dummy = $is->getDummyImages($ncol * $nrow);
-
-array_push($_SESSION['displayed'], $keyimg);
-
-$correct_cell = mt_rand(0, 8);
-$_SESSION['pivot'] = $correct_cell;
-
-error_log("Displayed: ".var_export($_SESSION['displayed'], true)."\n", 3, "logs/debug.txt");
-error_log("Correct cell: ".var_export($correct_cell, true)."  ".$keyimg."\n", 3, "logs/debug.txt");
-?>
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -70,25 +10,66 @@ img.img_cell {
 }
 </style>
 
+<script type="text/javascript">
+
+function mSelect(cellnum) {
+	var xmlhttp;
+	if (window.XMLHttpRequest) {
+	  xmlhttp=new XMLHttpRequest();
+	} else {
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+
+	sessionStorage.setItem("start", (new Date()).getTime().toString());
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+
+			try {
+				res = JSON.parse(xmlhttp.responseText);
+				window.location = "/result.php?success="+res.success;
+			} catch(e) {
+			}
+			
+			image_table = document.getElementById("image_table");
+			image_table.innerHTML = xmlhttp.response;
+
+			end = (new Date()).getTime();
+			diff = end - parseInt(sessionStorage.getItem("start"));
+			diff += parseInt(sessionStorage.getItem("total_time"));
+			sessionStorage.setItem("total_time", diff.toString());
+		}
+	}
+
+	switch (cellnum) {
+	case -1:
+		xmlhttp.open("POST", "modules/generate_images.php", true);
+		xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xmlhttp.send("username=<?php echo isset($_POST['username']) ? $_POST['username'] : "" ?>");
+		break;
+	case -2:
+		xmlhttp.open("GET", "modules/generate_images.php", true);
+		xmlhttp.send();
+		break;
+	default:
+		xmlhttp.open("GET", "modules/generate_images.php?selected=" + cellnum, true);
+		xmlhttp.send();
+		break;
+	}
+}
+
+<?php
+if (isset($_POST['username'])) {
+	echo 'sessionStorage.setItem("total_time","0");';
+	echo "window.onload = mSelect(-1);";
+} else {
+	echo "window.onload = mSelect(-2);";
+}
+?>
+
+</script>
+
 </head>
 <body>
-	<?php if (!$is->isSuccess()) { ?>
-		<h2>Username not exists</h2>
-	<?php } else { ?>
-	<table>
-	<?php
-	for ($i = 0; $i < $nrow; ++$i) {
-		echo "<tr>";
-		for ($j = 0; $j < $ncol; ++$j) {
-			$cellnum = $i * $ncol + $j;
-			$imgsrc = ($correct_cell == $cellnum) ? $keyimg : $dummy[$cellnum];
-			echo "<td><a href=\"?selected=$cellnum\" onClick=\"select($cellnum)\"><img class=\"img_cell\" src=\"$imgsrc\" /></a></td>";
-		}
-		echo "</tr>";
-	}
-?>
-	</table>
-	<?php } ?>
-	<input type="button" name="reload" value="Reload" onClick="window.location='/select.php'" />
+	<div id="image_table"></div>
 </body>
 </html>
