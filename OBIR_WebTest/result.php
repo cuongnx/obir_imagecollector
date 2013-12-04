@@ -28,11 +28,12 @@ if (isset($_SESSION['start'])) {
 	$m = floor($s / 60);
 	$s = $s - $m * 60;
 
-	printf("%02d:%02d:%02.3f", $h, $m, $s);
+	printf("%d : %d : %.3f", $h, $m, $s);
 } else {
 	echo "unknown";
 }
 session_destroy();
+$_SESSION['signing_in'] = false;
 ?>
 </b>
 <br/><br/>
@@ -40,6 +41,12 @@ session_destroy();
 Response time :
 
 <b id="response_time">
+</b>
+<br/><br/>
+
+Average per image request:
+
+<b id="average_time">
 </b>
 <br/><br/>
 
@@ -51,7 +58,11 @@ s -= h * 3600;
 m = Math.floor(s / 60);
 s -= m * 60;
 
+count = parseInt(sessionStorage.getItem("total_count"));
+avg = ms / count;
+
 document.getElementById("response_time").innerHTML = h + " : " + m + " : " + s;
+document.getElementById("average_time").innerHTML = avg.toFixed(2) + " ms";
 </script>
 
 <input type="button" onClick="window.location='/index.php'" value="Retry" />

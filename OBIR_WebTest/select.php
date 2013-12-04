@@ -1,3 +1,15 @@
+<?php
+session_start();
+if (isset($_POST['username'])) {
+	$_SESSION['siging_in'] = true;
+} else {
+	if (!isset($_SESSION['siging_in']) && $_SESSION['siging_in'] == false) {
+		header("Location: /index.php");
+	}
+}
+
+?>
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -37,6 +49,10 @@ function mSelect(cellnum) {
 			diff = end - parseInt(sessionStorage.getItem("start"));
 			diff += parseInt(sessionStorage.getItem("total_time"));
 			sessionStorage.setItem("total_time", diff.toString());
+
+			count = parseInt(sessionStorage.getItem("total_count"));
+			count++;
+			sessionStorage.setItem("total_count", count.toString());
 		}
 	}
 
@@ -60,6 +76,7 @@ function mSelect(cellnum) {
 <?php
 if (isset($_POST['username'])) {
 	echo 'sessionStorage.setItem("total_time","0");';
+	echo 'sessionStorage.setItem("total_count","0");';
 	echo "window.onload = mSelect(-1);";
 } else {
 	echo "window.onload = mSelect(-2);";
