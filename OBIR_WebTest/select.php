@@ -73,6 +73,7 @@ function mSelect(cellnum) {
 		xmlhttp.send();
 		break;
 	default:
+		sessionStorage.setItem("total_reload", "0");
 		xmlhttp.open("GET", "modules/generate_images.php?selected=" + cellnum, true);
 		xmlhttp.send();
 		break;
