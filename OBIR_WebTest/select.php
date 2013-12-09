@@ -63,6 +63,12 @@ function mSelect(cellnum) {
 		xmlhttp.send("username=<?php echo isset($_POST['username']) ? $_POST['username'] : "" ?>");
 		break;
 	case -2:
+		count = parseInt(sessionStorage.getItem("total_reload"));
+		if (count >=3) {
+			window.location = "/result.php?success=0";
+		}
+		count++;
+		sessionStorage.setItem("total_reload", count.toString());
 		xmlhttp.open("GET", "modules/generate_images.php", true);
 		xmlhttp.send();
 		break;
@@ -77,6 +83,7 @@ function mSelect(cellnum) {
 if (isset($_POST['username'])) {
 	echo 'sessionStorage.setItem("total_time","0");';
 	echo 'sessionStorage.setItem("total_count","0");';
+	echo 'sessionStorage.setItem("total_reload","0");';
 	echo "window.onload = mSelect(-1);";
 } else {
 	echo "window.onload = mSelect(-2);";

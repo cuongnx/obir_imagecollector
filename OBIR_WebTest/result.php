@@ -28,7 +28,7 @@ if (isset($_SESSION['start'])) {
 	$m = floor($s / 60);
 	$s = $s - $m * 60;
 
-	printf("%d : %d : %.3f", $h, $m, $s);
+	printf("%d ms   (%d:%d:%.3f)", $diff*1000, $h, $m, $s);
 } else {
 	echo "unknown";
 }
@@ -58,10 +58,10 @@ s -= h * 3600;
 m = Math.floor(s / 60);
 s -= m * 60;
 
-count = parseInt(sessionStorage.getItem("total_count"));
+count = parseInt(sessionStorage.getItem("total_count")) - 1;
 avg = ms / count;
 
-document.getElementById("response_time").innerHTML = h + " : " + m + " : " + s;
+document.getElementById("response_time").innerHTML = ms + " ms   (" + h + ":" + m + ":" + s + ")";
 document.getElementById("average_time").innerHTML = avg.toFixed(2) + " ms";
 </script>
 
