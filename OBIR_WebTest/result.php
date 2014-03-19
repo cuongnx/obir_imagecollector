@@ -1,3 +1,12 @@
+<?php
+require_once 'modules/Mobile_Detect.php';
+
+$detect = new Mobile_Detect();
+$isMobile = $detect->isMobile();
+
+$result = $_GET["success"];
+?>
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -6,10 +15,6 @@
 </head>
 
 <body>
-
-<?php
-$result = $_GET["success"];
-?>
 
 <h2><?php echo($result) ? "Authenticated!" : "Authentication failed!" ?></h2>
 </br>
@@ -28,7 +33,7 @@ if (isset($_SESSION['start'])) {
 	$m = floor($s / 60);
 	$s = $s - $m * 60;
 
-	printf("%d ms   (%d:%d:%.3f)", $diff*1000, $h, $m, $s);
+	printf("%d ms   (%d:%d:%.3f)", $diff * 1000, $h, $m, $s);
 } else {
 	echo "unknown";
 }
@@ -65,6 +70,11 @@ document.getElementById("response_time").innerHTML = ms + " ms   (" + h + ":" + 
 document.getElementById("average_time").innerHTML = avg.toFixed(2) + " ms";
 </script>
 
+<?php
+if (!$isMobile) {
+?>
 <input type="button" onClick="window.location='/index.php'" value="Retry" />
 </body>
+<?php } ?>
+
 </html>

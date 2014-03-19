@@ -1,4 +1,9 @@
 <?php
+require_once 'modules/Mobile_Detect.php';
+
+$detect = new Mobile_Detect();
+$isMobile = $detect->isMobile();
+
 session_start();
 if (isset($_POST['username'])) {
 	$_SESSION['siging_in'] = true;
@@ -7,20 +12,51 @@ if (isset($_POST['username'])) {
 		header("Location: /index.php");
 	}
 }
-
 ?>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>OBIR WebTest</title>
+
 <style type="text/css">
-img.img_cell {
-	width: 250px;
-	height: 250px;
+table {
+	width: 100%;
 }
+
+td {
+	width: 30%;
+}
+
+.img_container {
+	width: 100%;
+	position: relative;
+	overflow: auto;
+}
+
+.img_container:before {
+	content: "";
+	display: block;
+	padding-top: 100%;
+}
+
+img {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	height: 100%;
+}
+
+
 </style>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+</script>
 
 <script type="text/javascript">
 
@@ -80,12 +116,30 @@ function mSelect(cellnum) {
 	}
 }
 
+function initTable() {
+<?php
+if ($isMobile) {
+	$output = '$("#image_table").css("width", window.innerWidth);';
+} else {
+	$output ='$("#image_table").css("width", window.innerWidth*0.8);';
+}
+echo $output;
+?>
+}
+
+function initPage() {
+	$(document).ready(function() {
+		initTable();
+	});
+	mSelect(-1);
+}
+
 <?php
 if (isset($_POST['username'])) {
 	echo 'sessionStorage.setItem("total_time","0");';
 	echo 'sessionStorage.setItem("total_count","0");';
 	echo 'sessionStorage.setItem("total_reload","0");';
-	echo "window.onload = mSelect(-1);";
+	echo "window.onload = initPage();";
 } else {
 	echo "window.onload = mSelect(-2);";
 }

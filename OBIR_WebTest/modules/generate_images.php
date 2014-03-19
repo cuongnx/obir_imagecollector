@@ -72,7 +72,7 @@ for ($i = 0; $i < $nrow; ++$i) {
 	for ($j = 0; $j < $ncol; ++$j) {
 		$cellnum = $i * $ncol + $j;
 		$imgsrc = ($correct_cell == $cellnum) ? $keyimg : $dummy[$cellnum];
-		echo "<td><a href=\"javascript:void(0)\" onclick=\"mSelect($cellnum)\"><img class=\"img_cell\" src=\"$imgsrc\" /></a></td>";
+		echo "<td><div class=\"img_container\"><a class=\"a_cell\" href=\"javascript:void(0)\" onclick=\"mSelect($cellnum)\"><img class=\"img_cell\" src=\"$imgsrc\" /></a></div></td>";
 	}
 	echo "</tr>";
 }
